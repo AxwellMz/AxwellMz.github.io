@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horario Universitario</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: center;
+            width: 100px;
+            height: 80px;
+        }
+        .draggable {
+            cursor: move;
+            background-color: lightgrey;
+            margin: 5px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .draggable.theory {
+            background-color: #ffcccb;
+        }
+        .draggable.lab {
+            background-color: #add8e6;
+        }
+        .droppable {
+            min-height: 80px;
+            position: relative;
+        }
+        .droppable div {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Horario Universitario</h1>
+        <form id="courseForm">
+            <label for="courseName">Curso:</label>
+            <input type="text" id="courseName" name="courseName" required>
+            <label for="courseTime">Hora (ej. 08:00 AM - 10:00 AM):</label>
+            <input type="text" id="courseTime" name="courseTime" required>
+            <label for="courseTeacher">Docente:</label>
+            <input type="text" id="courseTeacher" name="courseTeacher" required>
+            <label for="courseType">Tipo:</label>
+            <select id="courseType" name="courseType" required>
+                <option value="T">Teoría</option>
+                <option value="L">Laboratorio</option>
+            </select>
+            <label for="courseGroup">Grupo:</label>
+            <input type="text" id="courseGroup" name="courseGroup" required>
+            <button type="submit">Agregar Curso</button>
+        </form>
+
+        <div id="courseList">
+            <!-- Cursos agregados se mostrarán aquí -->
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Hora/Día</th>
+                    <th>Lunes</th>
+                    <th>Martes</th>
+                    <th>Miércoles</th>
+                    <th>Jueves</th>
+                    <th>Viernes</th>
+                </tr>
+            </thead>
+            <tbody id="schedule">
+                <!-- Rows will be inserted here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const courseForm = document.getElementById('courseForm');
+        const schedule = document.getElementById('schedule');
+        const courseList = document.getElementById('courseList');
+        const times = [
+            "08:00 AM - 10:00 AM", "10:00 AM - 12:00 PM", "12:00 PM - 02:00 PM",
+            "02:00 PM - 04:00 PM", "04:00 PM - 06:00 PM", "06:00 PM - 08:00 PM", "08:00 PM - 10:00 PM"
+        ];
+        const courseColors = {};
+
+        // Create the initial schedule rows
+        times.forEach(time => {
+            const row = document.createElement('tr');
+            const timeCell = document.createElement('td');
+            timeCell.textContent = time;
+            row.appendChild(timeCell);
+            for (let i = 0; i < 5; i++) {
+                const cell = document.createElement('td');
+                cell.className = 'droppable';
+                row.appendChild(cell);
+            }
+            schedule.appendChild(row);
+        });
+
+        courseForm.addEventListener('submit', event => {
+            event.preventDefault();
+            const courseName = document.getElementById('courseName').value;
+            const courseTime = document.getElementById('courseTime').value;
+            const courseTeacher = document.getElementById('courseTeacher').value;
+            const courseType = document.getElementById('courseType').value;
+            const courseGroup = document.getElementById('courseGroup').value;
+
+            let courseItem = document.createElement('div');
+            courseItem.className = `draggable ${courseType === 'T' ? 'theory' : 'lab'}`;
+            courseItem.textContent = `${courseName} (${courseTeacher}) [${courseType}] - ${courseGroup}`;
+            courseItem.draggable = true;
+
+            if (!courseColors[courseName]) {
+                courseColors[courseName] = courseItem.className.includes('theory') ? '#ffcccb' : '#add8e6';
+            }
+            courseItem.style.backgroundColor = courseColors[courseName];
+
+            courseItem.addEventListener('dragstart', dragStart);
+            courseItem.addEventListener('dragend', dragEnd);
+
+            courseItem.id = `course-${Date.now()}`;
+            courseList.appendChild(courseItem);
+            document.getElementById('courseForm').reset();
+        });
+
+        const cells = document.querySelectorAll('.droppable');
+        cells.forEach(cell => {
+            cell.addEventListener('dragover', dragOver);
+            cell.addEventListener('drop', drop);
+        });
+
+        function dragStart(event) {
+            event.dataTransfer.setData('text/plain', event.target.id);
+            setTimeout(() => {
+                event.target.style.display = 'none';
+            }, 0);
+        }
+
+        function dragEnd(event) {
+            event.target.style.display = 'block';
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            const id = event.dataTransfer.getData('text');
+            const draggable = document.getElementById(id);
+            event.target.appendChild(draggable);
+            draggable.style.display = 'block';
+        }
+
+        document.addEventListener('dblclick', function(event) {
+            if (event.target.classList.contains('draggable')) {
+                courseList.appendChild(event.target);
+            }
+        });
+    </script>
+</body>
+</html>
+
